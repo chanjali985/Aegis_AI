@@ -1,0 +1,32 @@
+__pycache__/
+*.pyc
+.aegis/
+.venv/
+*.egg-info/
+evaluation/results/_workspaces/
+evaluation/results/benchmark.db*
+.pytest_cache/
+build/
+dist/
+
+# secrets (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# private notes
+docs/RESUME.md
+
+# test coverage
+.coverage
+htmlcov/

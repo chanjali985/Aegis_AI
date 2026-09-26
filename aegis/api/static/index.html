@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AegisAI Console</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #14171f; --muted: #5d6474; --line: #e3e6ec;
+  --accent: #2f5bea; --accent-soft: #e8eeff; --ok: #1d8a4e; --ok-soft: #e3f5ea; --warn: #b26a00;
+  --warn-soft: #fff3de; --bad: #c2372d; --bad-soft: #fde8e6; --run: #6b4ce6; --run-soft: #efeaff;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1116; --panel: #171a21; --ink: #e8eaf0; --muted: #9aa1b2; --line: #2a2f3a;
+    --accent: #7c9bff; --accent-soft: #1d2640; --ok: #4cc38a; --ok-soft: #14291f; --warn: #f0b24a;
+    --warn-soft: #2d2413; --bad: #ff7a6e; --bad-soft: #321a18; --run: #a992ff; --run-soft: #241d3d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1116; --panel: #171a21; --ink: #e8eaf0; --muted: #9aa1b2; --line: #2a2f3a;
+  --accent: #7c9bff; --accent-soft: #1d2640; --ok: #4cc38a; --ok-soft: #14291f; --warn: #f0b24a;
+  --warn-soft: #2d2413; --bad: #ff7a6e; --bad-soft: #321a18; --run: #a992ff; --run-soft: #241d3d;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; align-items: center; gap: 24px; padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+header h1 { font-size: 16px; margin: 0; letter-spacing: .02em; }
+header h1 span { color: var(--muted); font-weight: 400; }
+nav { display: flex; gap: 4px; }
+nav button { background: none; border: 0; color: var(--muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; }
+nav button.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--line); color: var(--muted); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); } .pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); } .pill.run { background: var(--run-soft); color: var(--run); }
+#provider { margin-left: auto; color: var(--muted); font-size: 12px; }
+main { padding: 20px 24px; max-width: 1440px; margin: 0 auto; }
+.view { display: none; } .view.active { display: block; }
+.grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; }
+label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+select, textarea, input { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+textarea { min-height: 84px; resize: vertical; }
+button.primary { margin-top: 12px; width: 100%; background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 10px; font-weight: 600; cursor: pointer; }
+button.primary:disabled { opacity: .5; cursor: default; }
+.runs { list-style: none; margin: 0; padding: 0; }
+.runs li { padding: 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+.runs li:hover, .runs li.sel { background: var(--accent-soft); }
+.runs small { color: var(--muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agents { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.agent { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 74px; background: var(--bg); }
+.agent b { font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+.agent p { margin: 4px 0 0; font-size: 12px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.agent.running { border-color: var(--run); background: var(--run-soft); }
+.agent.done { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+.agent.failed { border-color: var(--bad); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.running .dot { background: var(--run); animation: pulse 1s infinite; } .done .dot { background: var(--ok); } .failed .dot { background: var(--bad); }
+@keyframes pulse { 50% { opacity: .3; } }
+.headline { font-size: 18px; font-weight: 650; margin: 4px 0 8px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.feed { max-height: 520px; overflow: auto; font-size: 13px; }
+.feed div { padding: 5px 0; border-bottom: 1px dashed var(--line); }
+.feed .who { font-weight: 600; margin-right: 6px; }
+.feed .sec { color: var(--bad); }
+.hyp { margin-bottom: 10px; }
+.bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.checks { list-style: none; padding: 0; margin: 0; }
+.checks li { padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.checks .mark { font-weight: 700; margin-right: 6px; }
+.pass { color: var(--ok); } .fail { color: var(--bad); } .na { color: var(--muted); }
+.approval { border: 2px solid var(--warn); background: var(--warn-soft); }
+.approval h2 { color: var(--warn); }
+.approval .actions { display: flex; gap: 8px; margin-top: 12px; }
+.approval button { border: 0; border-radius: 6px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
+.b-ok { background: var(--ok); color: #fff; } .b-bad { background: var(--bad); color: #fff; } .b-mid { background: var(--line); color: var(--ink); }
+pre { font-family: var(--mono); font-size: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px; overflow: auto; max-height: 360px; margin: 8px 0 0; }
+pre .add { color: var(--ok); } pre .del { color: var(--bad); } pre .hunk { color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.kpi span { color: var(--muted); font-size: 12px; } .kpi b { display: block; font-size: 22px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); } .mono { font-family: var(--mono); font-size: 12px; }
+.empty { color: var(--muted); padding: 24px; text-align: center; }
+details summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+.tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); margin: 2px 4px 2px 0; }
+.grid > *, .two > * { min-width: 0; }
+.panel { overflow-x: auto; }
+@media (max-width: 1000px) { nav { overflow-x: auto; max-width: 100%; } #provider { margin-left: 0; } .grid, .two { grid-template-columns: 1fr; } .agents { grid-template-columns: repeat(2, minmax(0, 1fr)); } header { flex-wrap: wrap; gap: 8px; padding: 10px 16px; } main { padding: 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>AegisAI <span>incident console</span></h1>
+  <nav>
+    <button data-view="investigate" class="active">Investigate</button>
+    <button data-view="observability">Observability</button>
+    <button data-view="evaluation">Evaluation</button>
+    <button data-view="agents">Agents</button>
+  </nav>
+  <div id="provider"></div>
+</header>
+<main>
+<section id="investigate" class="view active">
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <h2>New investigation</h2>
+        <label for="scenario">Environment (synthetic production incident)</label>
+        <select id="scenario"></select>
+        <label for="request">Report</label>
+        <textarea id="request"></textarea>
+        <button class="primary" id="start">Investigate</button>
+      </div>
+      <div class="panel">
+        <h2>Recent runs</h2>
+        <ul class="runs" id="runs"></ul>
+      </div>
+    </div>
+    <div id="detail"><div class="panel empty">Start an investigation or pick a recent run.</div></div>
+  </div>
+</section>
+<section id="observability" class="view"></section>
+<section id="evaluation" class="view"></section>
+<section id="agents" class="view"></section>
+</main>
+<script>
+const AGENTS = ["supervisor","planner","memory","observability","research","code","database","rca","verification","fix"];
+const TITLES = {supervisor:"Supervisor",planner:"Planner",memory:"Memory",observability:"Observability",research:"Research",code:"Code",database:"Database",rca:"Root cause",verification:"Verification",fix:"Fix"};
+let current = null, source = null, scenarios = [], refreshTimer = null, agentState = {};
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = (v) => v == null ? "–" : (v * 100).toFixed(1) + "%";
+async function api(path, opts) { const r = await fetch(path, opts); if (!r.ok) throw new Error(await r.text()); return r.json(); }
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === b.dataset.view));
+  ({observability: loadObs, evaluation: loadEval, agents: loadAgents})[b.dataset.view]?.();
+});
+
+async function init() {
+  const h = await api("/healthz");
+  $("#provider").innerHTML = `LLM: <b>${esc(h.llm_provider)}</b>${h.llm_live ? "" : " (offline, deterministic fallbacks)"} · MCP: ${esc(h.mcp_transport)}`;
+  scenarios = await api("/api/scenarios");
+  $("#scenario").innerHTML = scenarios.map(s => `<option value="${s.id}">${esc(s.id)} — ${esc(s.service)}</option>`).join("");
+  $("#scenario").onchange = () => { $("#request").value = scenarios.find(s => s.id === $("#scenario").value).request; };
+  $("#scenario").onchange();
+  $("#start").onclick = start;
+  await loadRuns();
+  const first = (await api("/api/investigations"))[0];
+  if (first) select(first.id);
+}
+
+async function loadRuns() {
+  const runs = await api("/api/investigations");
+  $("#runs").innerHTML = runs.map(r => `<li data-id="${r.id}" class="${r.id === current ? "sel" : ""}">${statusPill(r.status)} <b class="mono">${esc(r.incident_id)}</b><small>${esc(r.request)}</small></li>`).join("") || `<li class="muted">No runs yet</li>`;
+  document.querySelectorAll("#runs li[data-id]").forEach(li => li.onclick = () => select(li.dataset.id));
+}
+
+function statusPill(s) {
+  const cls = {completed:"ok", diagnosed:"ok", running:"run", investigating:"run", awaiting_approval:"warn", escalated:"bad", failed:"bad", rejected:"bad", changes_requested:"warn"}[s] || "";
+  return `<span class="pill ${cls}">${esc((s || "").replace(/_/g, " "))}</span>`;
+}
+
+async function start() {
+  $("#start").disabled = true;
+  try {
+    const {run_id} = await api("/api/investigations", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({scenario: $("#scenario").value, request: $("#request").value})});
+    await select(run_id); await loadRuns();
+  } finally { $("#start").disabled = false; }
+}
+
+async function select(id) {
+  current = id; agentState = {}; feed = [];
+  if (source) source.close();
+  document.querySelectorAll("#runs li").forEach(li => li.classList.toggle("sel", li.dataset.id === id));
+  $("#detail").innerHTML = `<div class="panel empty">Loading…</div>`;
+  source = new EventSource(`/api/investigations/${id}/stream`);
+  source.onmessage = (m) => { onEvent(JSON.parse(m.data)); scheduleRefresh(); };
+  await refresh();
+}
+
+let feed = [];
+function onEvent(e) {
+  const d = e.data || {};
+  if (e.type === "agent_started") agentState[e.agent] = {state: "running", text: d.task};
+  if (e.type === "agent_finished") agentState[e.agent] = {state: "done", text: d.summary || d.task};
+  if (e.type === "agent_failed") agentState[e.agent] = {state: "failed", text: d.error};
+  if (e.type === "delegation") agentState[d.to] = {state: "running", text: d.goal};
+  let line = null;
+  if (e.type === "delegation") line = `→ <b>${esc(d.to)}</b> via A2A: ${esc(d.goal)}`;
+  else if (e.type === "agent_finished" && !["supervisor", "planner", "verification", "rca"].includes(e.agent)) line = `✓ ${esc(d.summary || d.task)}`;
+  else if (e.type === "plan" || e.type === "replan") line = `${e.type === "replan" ? "Re-plan" : "Plan"} wave ${d.wave}: ` + d.steps.map(s => `<span class="tag">${esc(s.agent)}</span>${esc(s.reason)}`).join("; ");
+  else if (e.type === "hypotheses") line = "Hypotheses: " + d.hypotheses.slice(0, 3).map(h => `${esc(h.title)} (${(h.confidence * 100).toFixed(0)}%)`).join(" · ");
+  else if (e.type === "verification") line = `Verification: <b>${esc(d.verdict)}</b> — ${esc(d.summary)}`;
+  else if (e.type === "reflection") line = `Reflection: rejected ${esc(d.rejected)} — ${esc(d.reason)}`;
+  else if (e.type === "security_event") line = `<span class="sec">Guardrail: ${esc(d.kind.replace(/_/g, " "))} (${esc(d.rule || "")}) in ${esc(d.tool)}</span>`;
+  else if (e.type === "approval_required") line = `<b>Human approval required</b> for ${esc(d.tool)}`;
+  else if (e.type === "approval_decision") line = `Decision: <b>${esc(d.decision)}</b> by ${esc(d.by)}`;
+  else if (e.type === "onset") line = `Onset fixed at ${esc(d.onset)} (${esc(d.source)})`;
+  else if (e.type === "report") line = `Report: ${esc(d.headline)}`;
+  else if (e.type === "applied") line = `Applied: ${esc(d.summary || JSON.stringify(d.detail))}`;
+  if (line) feed.push(`<div><span class="who">${esc(TITLES[e.agent] || e.agent)}</span>${line}</div>`);
+  if (e.type === "report" || e.type === "status") loadRuns();
+}
+
+function scheduleRefresh() { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 250); }
+
+async function refresh() {
+  if (!current) return;
+  const inv = await api(`/api/investigations/${current}`);
+  renderDetail(inv);
+}
+
+function diffHtml(diff) {
+  return esc(diff).split("\n").filter(l => !l.startsWith("+{\"service\"")).map(l =>
+    l.startsWith("+") && !l.startsWith("+++") ? `<span class="add">${l}</span>` :
+    l.startsWith("-") && !l.startsWith("---") ? `<span class="del">${l}</span>` :
+    l.startsWith("@@") ? `<span class="hunk">${l}</span>` : l).join("\n");
+}
+
+function checksHtml(checks) {
+  return `<ul class="checks">${(checks || []).map(c => `<li><span class="mark ${c.passed === true ? "pass" : c.passed === false ? "fail" : "na"}">${c.passed === true ? "✓" : c.passed === false ? "✗" : "–"}</span><b>${esc(c.name.replace(/_/g, " "))}</b> <span class="muted">${esc(c.detail)}</span></li>`).join("")}</ul>`;
+}
+
+function renderDetail(inv) {
+  const live = inv.live || {}, rep = inv.result || {};
+  const hyps = live.hypotheses || [];
+  const agentsHtml = AGENTS.map(a => { const s = agentState[a] || {}; return `<div class="agent ${s.state || ""}"><b>${TITLES[a]}<span class="dot"></span></b><p>${esc(s.text || "idle")}</p></div>`; }).join("");
+  const pend = inv.pending_approval;
+  const approvalHtml = pend ? `<div class="panel approval"><h2>Human approval required</h2>
+    <div><b>Agent:</b> ${esc(pend.agent)} · <b>Tool:</b> <span class="mono">${esc(pend.tool)}</span></div>
+    <div><b>Action:</b> ${esc(pend.action)}</div>
+    <div><b>Reason:</b> ${esc(pend.reason)} (confidence ${(pend.confidence * 100).toFixed(0)}%)</div>
+    ${checksHtml(pend.checks)}
+    ${pend.diff ? `<details open><summary>Proposed change</summary><pre>${diffHtml(pend.diff)}</pre></details>` : ""}
+    ${pend.actions ? `<pre>${esc(JSON.stringify(pend.actions, null, 2))}</pre>` : ""}
+    <label for="comment">Comment</label><input id="comment" placeholder="optional">
+    <div class="actions"><button class="b-ok" onclick="decide('approve')">Approve</button><button class="b-bad" onclick="decide('reject')">Reject</button><button class="b-mid" onclick="decide('request_changes')">Request changes</button></div></div>` : "";
+  const hypHtml = hyps.length ? hyps.slice(0, 4).map(h => `<div class="hyp"><div><b>${esc(h.title)}</b> <span class="muted">${(h.confidence * 100).toFixed(1)}% · score ${h.score}</span></div><div class="bar"><i style="width:${(h.confidence * 100).toFixed(1)}%"></i></div>
+     ${h.supporting?.length ? `<details><summary>${h.supporting.length} supporting / ${h.contradicting?.length || 0} contradicting rules</summary><ul class="checks">${h.supporting.map(s => `<li><span class="pass">+${s.weight}</span> ${esc(s.rule)} <span class="mono muted">${esc(s.evidence.join(", "))}</span></li>`).join("")}${(h.contradicting || []).map(s => `<li><span class="fail">${s.weight}</span> ${esc(s.rule)}</li>`).join("")}</ul></details>` : ""}</div>`).join("") : `<div class="muted">Waiting for evidence…</div>`;
+  const ver = (live.verifications || []).map(v => `<div style="margin-bottom:10px"><b>${esc(v.target)}</b> ${statusPill(v.verdict === "verified" ? "completed" : v.verdict === "refuted" ? "failed" : "awaiting_approval").replace(/>[^<]+</, `>${v.verdict}<`)}${checksHtml(v.checks)}</div>`).join("") || `<div class="muted">Not yet verified</div>`;
+  const evidence = (live.evidence || []).map(e => `<tr><td class="mono">${esc(e.id)}</td><td>${esc(e.agent)}</td><td><span class="tag">${esc(e.kind)}</span></td><td>${esc(e.summary)}</td></tr>`).join("");
+  let reportHtml = "";
+  if (rep && rep.headline) {
+    const st = rep.stats || {}, sec = rep.security || {};
+    reportHtml = `<div class="panel"><h2>Final report</h2>
+      <p>${esc(rep.summary)}</p>
+      ${rep.root_cause ? `<h2 style="margin-top:16px">Evidence chain</h2><ul class="checks">${rep.root_cause.supporting.map(s => `<li><span class="pass">+${s.weight}</span> <b>${esc(s.rule)}</b>${s.evidence.map(ev => `<div class="muted"><span class="mono">${esc(ev.id)}</span> ${esc(ev.summary)}</div>`).join("")}</li>`).join("")}</ul>` : ""}
+      <h2 style="margin-top:16px">Timeline</h2><table>${(rep.timeline || []).map(t => `<tr><td class="mono">${esc(t.time)}</td><td>${esc(t.event)}</td></tr>`).join("")}</table>
+      ${rep.fix ? `<h2 style="margin-top:16px">Remediation</h2><p>${esc(rep.fix.summary)}</p>${rep.fix.diff ? `<details><summary>Patch</summary><pre>${diffHtml(rep.fix.diff)}</pre></details>` : ""}${rep.fix.pr ? `<details><summary>Pull request draft</summary><pre>${esc(rep.fix.pr.title + "\n\n" + rep.fix.pr.body)}</pre></details>` : ""}` : ""}
+      <div class="kpis" style="margin-top:16px">
+        <div class="kpi"><span>Evidence items</span><b>${st.evidence_items ?? "–"}</b></div>
+        <div class="kpi"><span>MCP tool calls</span><b>${st.tool_calls ?? "–"}</b></div>
+        <div class="kpi"><span>LLM tokens${st.llm_estimated ? " (est.)" : ""}</span><b>${((st.input_tokens || 0) + (st.output_tokens || 0)).toLocaleString()}</b></div>
+        <div class="kpi"><span>Cost routed / all-strong</span><b>$${(st.cost_usd || 0).toFixed(4)} / $${(st.baseline_cost_usd || 0).toFixed(4)}</b></div>
+        <div class="kpi"><span>Injections quarantined</span><b>${sec.prompt_injections_quarantined ?? 0}</b></div>
+        <div class="kpi"><span>PII values masked</span><b>${(sec.pii_masked ?? 0).toLocaleString()}</b></div>
+        <div class="kpi"><span>Grounded</span><b>${rep.grounding?.grounded ? "yes" : "no"}</b></div>
+      </div></div>`;
+  }
+  $("#detail").innerHTML = `
+    <div class="panel"><div>${statusPill(inv.status)} <span class="mono muted">${esc(inv.incident_id)} · run ${esc(inv.id)}</span></div>
+      <div class="headline">${esc(rep.headline || inv.request)}</div>
+      ${live.brief ? `<div class="muted">service <b>${esc(live.brief.service)}</b> · symptom ${esc(live.brief.symptom)}${live.onset ? ` · onset <b>${esc(live.onset)}</b>` : ""}${live.brief.suspected_version ? ` · reporter suspects v${esc(live.brief.suspected_version)}` : ""}</div>` : ""}
+      <div class="agents" style="margin-top:12px">${agentsHtml}</div></div>
+    ${approvalHtml}
+    <div class="two">
+      <div class="panel"><h2>Live activity</h2><div class="feed" id="feed">${feed.join("") || '<div class="muted">…</div>'}</div></div>
+      <div><div class="panel"><h2>Root-cause hypotheses</h2>${hypHtml}</div><div class="panel"><h2>Verification</h2>${ver}</div></div>
+    </div>
+    ${reportHtml}
+    <div class="panel"><details><summary>${(live.evidence || []).length} evidence items</summary><table><tr><th>ID</th><th>Agent</th><th>Kind</th><th>Summary</th></tr>${evidence}</table></details></div>`;
+  const f = $("#feed"); if (f) f.scrollTop = f.scrollHeight;
+}
+
+async function decide(decision) {
+  await api(`/api/investigations/${current}/approval`, {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({decision, comment: $("#comment")?.value || "", by: "dashboard user"})});
+  scheduleRefresh();
+}
+
+async function loadObs() {
+  const o = await api("/api/overview");
+  const inv = o.investigations || {}, llm = o.llm || {}, tools = o.tools || {};
+  const total = Object.values(inv).reduce((a, b) => a + b, 0);
+  $("#observability").innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><span>Investigations</span><b>${total}</b></div>
+      <div class="kpi"><span>Completed</span><b>${(inv.completed || 0) + (inv.diagnosed || 0)}</b></div>
+      <div class="kpi"><span>Awaiting approval</span><b>${inv.awaiting_approval || 0}</b></div>
+      <div class="kpi"><span>Escalated</span><b>${inv.escalated || 0}</b></div>
+      <div class="kpi"><span>Avg duration</span><b>${o.avg_duration_s ? o.avg_duration_s.toFixed(1) + "s" : "–"}</b></div>
+      <div class="kpi"><span>LLM calls${llm.est ? " (est.)" : ""}</span><b>${llm.calls || 0}</b></div>
+      <div class="kpi"><span>Tokens in / out</span><b>${(llm.inp || 0).toLocaleString()} / ${(llm.outp || 0).toLocaleString()}</b></div>
+      <div class="kpi"><span>Spend routed vs all-strong</span><b>$${(llm.cost || 0).toFixed(3)} / $${(llm.base || 0).toFixed(3)}</b></div>
+      <div class="kpi"><span>MCP tool calls</span><b>${(tools.n || 0).toLocaleString()}</b></div>
+      <div class="kpi"><span>Denied tool calls</span><b>${tools.denied || 0}</b></div>
+      <div class="kpi"><span>PII values masked</span><b>${(tools.red || 0).toLocaleString()}</b></div>
+      <div class="kpi"><span>Injection findings</span><b>${tools.inj || 0}</b></div>
+    </div>
+    <div class="two">
+      <div class="panel"><h2>Agent latency</h2><table><tr><th>Agent</th><th class="num">Runs</th><th class="num">Avg ms</th></tr>${(o.per_agent || []).map(a => `<tr><td>${esc(a.agent)}</td><td class="num">${a.n}</td><td class="num">${a.avg_ms.toFixed(0)}</td></tr>`).join("")}</table></div>
+      <div class="panel"><h2>Recent guardrail events</h2><table>${(o.security_events || []).filter(s => s.kind !== "pii_masked").slice(0, 15).map(s => `<tr><td>${esc(s.agent)}</td><td><span class="tag">${esc(s.kind)}</span></td><td class="muted">${esc(s.detail.rule || s.detail.reason || "")} ${esc(s.detail.tool || "")}</td></tr>`).join("") || '<tr><td class="muted">None yet</td></tr>'}</table></div>
+    </div>
+    <div class="panel muted">Prometheus metrics are exposed at <span class="mono">/metrics</span>.</div>`;
+}
+
+async function loadEval() {
+  const {summary: s, source} = await api("/api/evaluation");
+  if (!s) { $("#evaluation").innerHTML = `<div class="panel empty">No benchmark yet. Run <span class="mono">aegis benchmark --n 100</span>.</div>`; return; }
+  const f = s.configs.full;
+  $("#evaluation").innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><span>Incidents</span><b>${s.n}</b></div>
+      <div class="kpi"><span>RCA accuracy</span><b>${pct(f.rca_accuracy)}</b></div>
+      <div class="kpi"><span>End-to-end success</span><b>${pct(f.end_to_end_success)}</b></div>
+      <div class="kpi"><span>Precision when verified</span><b>${pct(f.precision_when_verified)}</b></div>
+      <div class="kpi"><span>Escalation rate</span><b>${pct(f.escalation_rate)}</b></div>
+      <div class="kpi"><span>Grounded reports</span><b>${pct(f.grounded_rate)}</b></div>
+      <div class="kpi"><span>Latency p50</span><b>${f.latency_p50_s}s</b></div>
+      <div class="kpi"><span>Routing saving${f.llm_costs_estimated ? " (est.)" : ""}</span><b>${pct(f.routing_cost_saving)}</b></div>
+    </div>
+    <div class="panel"><h2>Systems compared</h2><table><tr><th>System</th><th class="num">Pattern</th><th class="num">Culprit</th><th class="num">RCA (both)</th><th class="num">Escalated</th><th class="num">Wrong & silent</th></tr>
+      ${Object.entries(s.configs).map(([k, v]) => `<tr><td>AegisAI (${esc(k)})</td><td class="num">${pct(v.pattern_accuracy)}</td><td class="num">${pct(v.culprit_accuracy)}</td><td class="num">${pct(v.rca_accuracy)}</td><td class="num">${pct(v.escalation_rate)}</td><td class="num">${v.wrong_and_not_escalated}</td></tr>`).join("")}
+      <tr><td>Baseline: roll back last deploy</td><td class="num">–</td><td class="num">${pct(s.baselines.naive_last_deploy.culprit_accuracy)}</td><td class="num">–</td><td class="num">–</td><td class="num">–</td></tr>
+      <tr><td>Baseline: logs-only single agent</td><td class="num">${pct(s.baselines.logs_only_agent.pattern_accuracy)}</td><td class="num">–</td><td class="num">–</td><td class="num">–</td><td class="num">–</td></tr></table></div>
+    <div class="two">
+      <div class="panel"><h2>By failure family</h2><table><tr><th>Family</th><th class="num">n</th><th class="num">AegisAI</th><th class="num">No verif.</th><th class="num">Last deploy</th><th class="num">Logs only</th></tr>${Object.entries(s.by_family).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${v.n}</td><td class="num">${pct(v.full)}</td><td class="num">${pct(v.no_verification)}</td><td class="num">${pct(v.naive_last_deploy)}</td><td class="num">${pct(v.logs_only_agent)}</td></tr>`).join("")}</table></div>
+      <div><div class="panel"><h2>Adverse conditions</h2><table><tr><th>Condition</th><th class="num">n</th><th class="num">Accuracy</th><th class="num">Escalated</th></tr>${Object.entries(s.by_condition).map(([k, v]) => `<tr><td>${esc(k.replace(/_/g, " "))}</td><td class="num">${v.n}</td><td class="num">${pct(v.full)}</td><td class="num">${pct(v.escalated)}</td></tr>`).join("")}</table></div>
+      <div class="panel"><h2>Retrieval</h2><table><tr><th>Mode</th><th class="num">R@1</th><th class="num">R@3</th><th class="num">MRR</th><th class="num">nDCG@5</th></tr>${Object.entries(s.retrieval).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${pct(v["recall@1"])}</td><td class="num">${pct(v["recall@3"])}</td><td class="num">${v.mrr.toFixed(3)}</td><td class="num">${v["ndcg@5"].toFixed(3)}</td></tr>`).join("")}</table></div></div>
+    </div><div class="panel muted">Source: ${esc(source)} · synthetic incidents · seed ${s.seed}</div>`;
+}
+
+async function loadAgents() {
+  const a = await api("/api/agents");
+  $("#agents").innerHTML = `<div class="panel"><h2>Orchestrator</h2><table>${a.orchestrator.map(o => `<tr><td><b>${esc(o.name)}</b></td><td>${esc(o.description)}</td><td class="muted">${esc(o.access)}</td></tr>`).join("")}</table></div>
+    <div class="panel"><h2>A2A agents (discovered from Agent Cards)</h2><table><tr><th>Agent</th><th>Skills</th><th>MCP tools allowed</th><th>Access</th></tr>
+    ${a.agents.map(c => `<tr><td><b>${esc(c.metadata.title)}</b><div class="mono muted">${esc(c.url)}</div></td><td>${c.skills.map(s => `<div><b>${esc(s.name)}</b> <span class="muted">${esc(s.description)}</span></div>`).join("")}</td><td>${(c.metadata.tools || []).map(t => `<span class="tag">${esc(t)}</span>`).join("") || '<span class="muted">none</span>'}</td><td class="muted">${esc(c.metadata.access)}</td></tr>`).join("")}</table>
+    <p class="muted">Tools that require a human approval token: ${a.approval_required.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</p></div>`;
+}
+
+init();
+</script>
+</body>
+</html>

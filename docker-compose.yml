@@ -1,0 +1,20 @@
+# Two containers talking A2A over HTTP: the API/orchestrator and a remote
+# observability agent. Both mount the same data volume (incident workspaces).
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      AEGIS_REMOTE_AGENTS: "observability=http://observability-agent:9101"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AEGIS_PROVIDER: ${AEGIS_PROVIDER:-auto}
+    volumes: ["aegis-data:/data"]
+    depends_on: [observability-agent]
+
+  observability-agent:
+    build: .
+    command: ["aegis", "serve-agent", "observability", "--host", "0.0.0.0", "--port", "9101"]
+    volumes: ["aegis-data:/data"]
+
+volumes:
+  aegis-data:

@@ -1,0 +1,262 @@
+{
+  "n": 100,
+  "configs": {
+    "full": {
+      "rca_accuracy": 0.97,
+      "pattern_accuracy": 0.97,
+      "culprit_accuracy": 1.0,
+      "top3_accuracy": 0.97,
+      "verified_rate": 1.0,
+      "precision_when_verified": 0.97,
+      "false_verifications": 3,
+      "escalation_rate": 0.03,
+      "wrong_and_not_escalated": 0,
+      "grounded_rate": 1.0,
+      "hallucination_rate": 0.0,
+      "tool_recall": 0.9793,
+      "avg_tool_calls": 44.2,
+      "denied_tool_calls": 0,
+      "sql_success_rate": 1.0,
+      "sql_accuracy": 1.0,
+      "latency_p50_s": 7.15,
+      "latency_p95_s": 8.49,
+      "avg_input_tokens": 6258,
+      "avg_output_tokens": 852,
+      "avg_cost_usd": 0.01128,
+      "avg_cost_all_strong_usd": 0.03156,
+      "llm_costs_estimated": true,
+      "avg_replans": 0,
+      "avg_reflections": 0.01,
+      "brier": 0.0112,
+      "ece": 0.0582,
+      "routing_cost_saving": 0.6426,
+      "fix_success_rate_given_correct_rca": 1.0,
+      "end_to_end_success": 0.97,
+      "injection_cases": 27,
+      "injection_detected_rate": 0.6296,
+      "injection_cases_correct": 0.963
+    },
+    "no_replanning": {
+      "rca_accuracy": 0.97,
+      "pattern_accuracy": 0.97,
+      "culprit_accuracy": 1.0,
+      "top3_accuracy": 0.97,
+      "verified_rate": 1.0,
+      "precision_when_verified": 0.97,
+      "false_verifications": 3,
+      "escalation_rate": 0.0,
+      "wrong_and_not_escalated": 3,
+      "grounded_rate": 1.0,
+      "hallucination_rate": 0.0,
+      "tool_recall": 0.9793,
+      "avg_tool_calls": 41.1,
+      "denied_tool_calls": 0,
+      "sql_success_rate": 1.0,
+      "sql_accuracy": 1.0,
+      "latency_p50_s": 0.86,
+      "latency_p95_s": 1.08,
+      "avg_input_tokens": 5886,
+      "avg_output_tokens": 577,
+      "avg_cost_usd": 0.00953,
+      "avg_cost_all_strong_usd": 0.02631,
+      "llm_costs_estimated": true,
+      "avg_replans": 0,
+      "avg_reflections": 0.01,
+      "brier": 0.0112,
+      "ece": 0.0582,
+      "routing_cost_saving": 0.6378
+    },
+    "no_verification": {
+      "rca_accuracy": 0.97,
+      "pattern_accuracy": 0.97,
+      "culprit_accuracy": 0.99,
+      "top3_accuracy": 0.97,
+      "verified_rate": 0.95,
+      "precision_when_verified": 1.0,
+      "false_verifications": 0,
+      "escalation_rate": 0.05,
+      "wrong_and_not_escalated": 0,
+      "grounded_rate": 1.0,
+      "hallucination_rate": 0.0,
+      "tool_recall": 0.9793,
+      "avg_tool_calls": 38.2,
+      "denied_tool_calls": 0,
+      "sql_success_rate": 1.0,
+      "sql_accuracy": 1.0,
+      "latency_p50_s": 0.32,
+      "latency_p95_s": 1.27,
+      "avg_input_tokens": 5989,
+      "avg_output_tokens": 580,
+      "avg_cost_usd": 0.00984,
+      "avg_cost_all_strong_usd": 0.02667,
+      "llm_costs_estimated": true,
+      "avg_replans": 0.1,
+      "avg_reflections": 0,
+      "brier": 0.0124,
+      "ece": 0.0501,
+      "routing_cost_saving": 0.631
+    }
+  },
+  "baselines": {
+    "naive_last_deploy": {
+      "pattern_accuracy": 0.0,
+      "culprit_accuracy": 0.49
+    },
+    "logs_only_agent": {
+      "pattern_accuracy": 0.87,
+      "culprit_accuracy": 0.0
+    }
+  },
+  "retrieval": {
+    "bm25": {
+      "recall@1": 0.77,
+      "recall@3": 0.79,
+      "mrr": 0.782,
+      "ndcg@5": 0.7865
+    },
+    "dense": {
+      "recall@1": 0.66,
+      "recall@3": 0.79,
+      "mrr": 0.727,
+      "ndcg@5": 0.7459
+    },
+    "hybrid": {
+      "recall@1": 0.77,
+      "recall@3": 0.79,
+      "mrr": 0.782,
+      "ndcg@5": 0.7865
+    },
+    "hybrid_rerank": {
+      "recall@1": 0.74,
+      "recall@3": 0.79,
+      "mrr": 0.765,
+      "ndcg@5": 0.7715
+    }
+  },
+  "by_family": {
+    "cache_unbounded": {
+      "n": 10,
+      "full": 1.0,
+      "no_verification": 1.0,
+      "naive_last_deploy": 0.7,
+      "logs_only_agent": 0.8,
+      "escalated": 0.0
+    },
+    "cert_expired": {
+      "n": 10,
+      "full": 1.0,
+      "no_verification": 1.0,
+      "naive_last_deploy": 0.0,
+      "logs_only_agent": 0.9,
+      "escalated": 0.0
+    },
+    "code_missing_field": {
+      "n": 10,
+      "full": 0.7,
+      "no_verification": 0.7,
+      "naive_last_deploy": 0.8,
+      "logs_only_agent": 0.7,
+      "escalated": 0.3
+    },
+    "db_timeout_reduced": {
+      "n": 10,
+      "full": 1.0,
+      "no_verification": 1.0,
+      "naive_last_deploy": 0.5,
+      "logs_only_agent": 0.8,
+      "escalated": 0.0
+    },
+    "flag_enabled": {
+      "n": 10,
+      "full": 1.0,
+      "no_verification": 1.0,
+      "naive_last_deploy": 0.0,
+      "logs_only_agent": 1.0,
+      "escalated": 0.0
+    },
+    "missing_index": {
+      "n": 10,
+      "full": 1.0,
+      "no_verification": 1.0,
+      "naive_last_deploy": 0.7,
+      "logs_only_agent": 0.9,
+      "escalated": 0.0
+    },
+    "pool_size_reduced": {
+      "n": 10,
+      "full": 1.0,
+      "no_verification": 1.0,
+      "naive_last_deploy": 0.9,
+      "logs_only_agent": 0.9,
+      "escalated": 0.0
+    },
+    "rate_limit_reduced": {
+      "n": 10,
+      "full": 1.0,
+      "no_verification": 1.0,
+      "naive_last_deploy": 0.7,
+      "logs_only_agent": 0.9,
+      "escalated": 0.0
+    },
+    "retry_storm": {
+      "n": 10,
+      "full": 1.0,
+      "no_verification": 1.0,
+      "naive_last_deploy": 0.6,
+      "logs_only_agent": 0.8,
+      "escalated": 0.0
+    },
+    "upstream_outage": {
+      "n": 10,
+      "full": 1.0,
+      "no_verification": 1.0,
+      "naive_last_deploy": 0.0,
+      "logs_only_agent": 1.0,
+      "escalated": 0.0
+    }
+  },
+  "by_condition": {
+    "logs_missing": {
+      "n": 13,
+      "full": 0.7692,
+      "escalated": 0.2308
+    },
+    "docs_missing": {
+      "n": 13,
+      "full": 1.0,
+      "escalated": 0.0
+    },
+    "stale_doc": {
+      "n": 11,
+      "full": 0.9091,
+      "escalated": 0.0909
+    },
+    "prompt_injection": {
+      "n": 27,
+      "full": 0.963,
+      "escalated": 0.037
+    },
+    "late_benign_deploy": {
+      "n": 21,
+      "full": 1.0,
+      "escalated": 0.0
+    },
+    "bundled_culprit": {
+      "n": 28,
+      "full": 0.9643,
+      "escalated": 0.0357
+    },
+    "misleading_version_hint": {
+      "n": 33,
+      "full": 0.9697,
+      "escalated": 0.0303
+    },
+    "decoy_config_change": {
+      "n": 34,
+      "full": 0.9706,
+      "escalated": 0.0294
+    }
+  },
+  "wall_time_s": 913.1,
+  "seed": 2026
+}
